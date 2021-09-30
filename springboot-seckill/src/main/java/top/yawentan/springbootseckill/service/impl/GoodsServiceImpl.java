@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.yawentan.springbootseckill.dao.GoodsMapper;
 import top.yawentan.springbootseckill.pojo.Goods;
 import top.yawentan.springbootseckill.service.GoodsService;
@@ -26,6 +27,7 @@ public class GoodsServiceImpl implements GoodsService {
         return Result.success(goods);
     }
 
+    @Transactional
     @Override
     public boolean doseckill(Long id) {
         Goods goods = goodsMapper.selectById(id);
