@@ -21,4 +21,11 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.selectOne(queryWrapper);
         return user;
     }
+
+    @Override
+    public void save(User user) {
+        int id = userMapper.selectCount(null);
+        user.setId(id+1L);
+        userMapper.insert(user);
+    }
 }
