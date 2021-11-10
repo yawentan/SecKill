@@ -1,6 +1,5 @@
 package top.yawentan.springbootseckill.util;
 
-import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -15,7 +14,7 @@ public class JWTUtils {
 
     /**
      * @description 生成token, 通过加密盐和HS256算法。
-     * @param userId
+     * @param userId 用户id
      * @return String token
      */
     public static String createToken(Long userId) {
@@ -32,8 +31,8 @@ public class JWTUtils {
 
     /**
      * 检查token从token中获得userId
-     * @param token
-     * @return
+     * @param token 前端传来的token
+     * @return 返回对应的userId
      */
     public static Integer checkToken(String token){
         try{

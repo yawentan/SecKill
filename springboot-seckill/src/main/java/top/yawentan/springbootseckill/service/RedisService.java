@@ -10,5 +10,9 @@ public interface RedisService {
      */
     String findKey(String key);
 
+    String findKeyMap(String key,String field);
+
     String saveString(String seckill_list, List<Goods> goods);
+
+    void saveKeyMap(String goods_list, String valueOf,String data);
 }

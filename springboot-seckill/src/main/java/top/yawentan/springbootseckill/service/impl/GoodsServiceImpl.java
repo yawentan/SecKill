@@ -1,11 +1,13 @@
 package top.yawentan.springbootseckill.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import redis.clients.jedis.JedisPool;
 import top.yawentan.springbootseckill.dao.GoodsMapper;
 import top.yawentan.springbootseckill.pojo.Goods;
 import top.yawentan.springbootseckill.service.GoodsService;
@@ -62,35 +64,33 @@ public class GoodsServiceImpl implements GoodsService {
      * @param id
      * @return
      */
-    @Transactional
+//    @Transactional
     @Override
     public boolean doseckill(Long id) {
         String key = String.valueOf(id);
-//        //先尝试从redis中读取数据
-//        JedisPool jedisPool = RedisPoolUtil.getJedisPoolInstance();
-//        Jedis jedis = jedisPool.getResource();
-//        //从redis中读取剩余数量
-//        String s = jedis.hget(key,"number");
-//        if(s!=null){
-//            int num = Integer.valueOf(s);
-//            //秒杀
-//            if(num>0){
-//                jedis.hset(key,"number",String.valueOf(num-1));
-//                jedis.close();
-//                System.out.println("秒杀成功");
-//                return true;
-//            }else{
-//                jedis.close();
-//                System.out.println("秒杀失败");
-//                return false;
-//            }
-//        }else
-        {
-            //redis中没有时，从数据库中读取并缓存到redis
+        //1.先尝试从redis中读取数据
+        String seckillList = redisService.findKeyMap("goods_list",String.valueOf(key));
+        //2.判断redis中是否有数据
+        if(!StringUtils.isBlank(seckillList)){
+            //3.从redis中读取剩余数量进行秒杀
+            Goods good = JSON.parseObject(seckillList, Goods.class);
+            Long num = good.getNumber();
+            if(num>0){
+                good.setNumber(num-1);
+                redisService.saveKeyMap("goods_list",String.valueOf(id),JSON.toJSONString(good));
+                System.out.println("秒杀成功");
+                return true;
+            }else{
+                System.out.println("秒杀失败");
+                return false;
+            }
+        }else {
+            //4. redis中没有时，从数据库中读取并缓存到redis
             Goods goods = goodsMapper.selectById(id);
-            Long number = goods.getNumber();
-            //判断过程没加锁，因此是线程不安全的
+            redisService.saveKeyMap("goods_list",String.valueOf(key),JSON.toJSONString(goods));
+            //5. 判断过程没加锁，因此是线程不安全的
             //当线程商品数量大于0时才能秒杀
+            Long number = goods.getNumber();
             if(number>0){
                 LambdaUpdateWrapper<Goods> updateWrapper = new LambdaUpdateWrapper<>();
                 updateWrapper.set(Goods::getNumber,number-1);

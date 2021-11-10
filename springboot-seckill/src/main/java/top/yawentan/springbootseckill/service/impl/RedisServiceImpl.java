@@ -22,10 +22,25 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public String findKeyMap(String key, String field) {
+        Jedis jedis = jedisPoolInstance.getResource();
+        String s = jedis.hget(key,field);
+        jedis.close();
+        return s;
+    }
+
+    @Override
     public String saveString(String key, List<Goods> goods) {
         Jedis jedis = jedisPoolInstance.getResource();
         String secKillList = jedis.set(key, JSONArray.toJSONString(goods));
         jedis.close();
         return secKillList;
+    }
+
+    @Override
+    public void saveKeyMap(String key, String field,String data) {
+        Jedis jedis = jedisPoolInstance.getResource();
+        jedis.hset(key,field,data);
+        jedis.close();
     }
 }
