@@ -15,8 +15,11 @@ public class SeckillListController {
     public Result listController(){
         return goodsService.getAllGoods();
     }
-    @PostMapping
-    public Result doseckill(@RequestParam("id") Long id){
+
+
+
+    @PostMapping("/{id}")
+    public Result doseckill(@PathVariable("id") Long id){
         boolean res = goodsService.doseckill(id);
         if(res){
             return Result.success("秒杀成功");
