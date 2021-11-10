@@ -8,7 +8,7 @@ import top.yawentan.springbootseckill.dao.RedisMapper;
 /**
  * @author yawen
  */
-public class RedisPoolUtil {
+public class RedisPoolUtils {
     //单例模式
     private static volatile JedisPool jedisPool = null;
 

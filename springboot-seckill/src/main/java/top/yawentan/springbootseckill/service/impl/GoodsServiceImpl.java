@@ -1,20 +1,16 @@
 package top.yawentan.springbootseckill.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 import top.yawentan.springbootseckill.dao.GoodsMapper;
 import top.yawentan.springbootseckill.pojo.Goods;
 import top.yawentan.springbootseckill.service.GoodsService;
 import top.yawentan.springbootseckill.service.RedisService;
-import top.yawentan.springbootseckill.util.RedisPoolUtil;
-import top.yawentan.springbootseckill.util.StringUtil;
+import top.yawentan.springbootseckill.util.StringUtils;
 import top.yawentan.springbootseckill.vo.Result;
 
 import java.util.List;
@@ -45,7 +41,7 @@ public class GoodsServiceImpl implements GoodsService {
         //1.先尝试从redis中查询秒杀列表
         String secKillList = redisService.findKey("seckill_list");
         //2.判断是否为空
-        if(StringUtil.isBlank(secKillList)){
+        if(StringUtils.isBlank(secKillList)){
             //3.为空查询mysql
             LambdaQueryWrapper<Goods> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.select(Goods::getId,Goods::getName,Goods::getNumber,Goods::getStartTime,Goods::getEndTime);

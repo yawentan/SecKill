@@ -4,12 +4,10 @@ import org.junit.jupiter.api.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class RedisPoolUtilTest {
     @Test
     public void testRedisPool(){
-        JedisPool jedisPool = RedisPoolUtil.getJedisPoolInstance();
+        JedisPool jedisPool = RedisPoolUtils.getJedisPoolInstance();
         Jedis jedis = jedisPool.getResource();
         String s = jedis.ping();
         System.out.println(s);

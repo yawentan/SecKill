@@ -3,7 +3,7 @@ package top.yawentan.springbootseckill.util;
 /**
  * 定义了一些常用的字符串功能函数
  */
-public class StringUtil {
+public class StringUtils {
     /**
      * 判断字符串是否为空
      * @param s

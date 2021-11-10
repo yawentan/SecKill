@@ -6,13 +6,13 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import top.yawentan.springbootseckill.pojo.Goods;
 import top.yawentan.springbootseckill.service.RedisService;
-import top.yawentan.springbootseckill.util.RedisPoolUtil;
+import top.yawentan.springbootseckill.util.RedisPoolUtils;
 
 import java.util.List;
 
 @Service
 public class RedisServiceImpl implements RedisService {
-    JedisPool jedisPoolInstance = RedisPoolUtil.getJedisPoolInstance();
+    JedisPool jedisPoolInstance = RedisPoolUtils.getJedisPoolInstance();
     @Override
     public String findKey(String key) {
         Jedis jedis = jedisPoolInstance.getResource();

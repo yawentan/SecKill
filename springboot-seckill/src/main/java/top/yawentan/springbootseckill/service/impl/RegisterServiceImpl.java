@@ -1,5 +1,6 @@
 package top.yawentan.springbootseckill.service.impl;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.yawentan.springbootseckill.pojo.User;
@@ -11,6 +12,7 @@ import top.yawentan.springbootseckill.vo.Result;
 public class RegisterServiceImpl implements RegisterService {
     @Autowired
     private UserService userService;
+    String SALT = "miaosha";
 
     @Override
     public Result register(String name, String pwd) {
@@ -28,7 +30,8 @@ public class RegisterServiceImpl implements RegisterService {
         //插入用户
         user = new User();
         user.setName(name);
-        user.setPassword(pwd);
+        String pwdMd5 = DigestUtils.md5Hex(pwd + SALT);
+        user.setPassword(pwdMd5);
         userService.save(user);
         return Result.success("注册成功");
     }
