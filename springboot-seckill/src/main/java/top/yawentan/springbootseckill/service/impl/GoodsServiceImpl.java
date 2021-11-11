@@ -6,13 +6,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-import redis.clients.jedis.JedisPool;
 import top.yawentan.springbootseckill.dao.GoodsMapper;
+import top.yawentan.springbootseckill.dao.OrdersMapper;
 import top.yawentan.springbootseckill.pojo.Goods;
+import top.yawentan.springbootseckill.pojo.Orders;
 import top.yawentan.springbootseckill.service.GoodsService;
 import top.yawentan.springbootseckill.service.RedisService;
 import top.yawentan.springbootseckill.util.StringUtils;
+import top.yawentan.springbootseckill.util.UserThreadLocal;
 import top.yawentan.springbootseckill.vo.Result;
 
 import java.util.List;
@@ -27,6 +30,8 @@ public class GoodsServiceImpl implements GoodsService {
      */
     @Autowired
     private GoodsMapper goodsMapper;
+    @Autowired
+    private OrdersMapper orderMapper;
     @Autowired
     private RedisService redisService;
 
@@ -61,46 +66,55 @@ public class GoodsServiceImpl implements GoodsService {
      * 通过事务直接操作mysql数据库，在十万个请求一万个并发下用时10128ms
      * 改写service层先从redis中读数据没用的话再从mysql中读
      * 尝试直接访问redis，在同样情况下的处理效率
-     * @param id
-     * @return
+     * @param id 商品id
+     * @return boolean 秒杀是否成功
      */
-//    @Transactional
     @Override
     public boolean doseckill(Long id) {
         String key = String.valueOf(id);
-        //1.先尝试从redis中读取数据
-        String seckillList = redisService.findKeyMap("goods_list",String.valueOf(key));
-        //2.判断redis中是否有数据
-        if(!StringUtils.isBlank(seckillList)){
-            //3.从redis中读取剩余数量进行秒杀
-            Goods good = JSON.parseObject(seckillList, Goods.class);
+        Goods good = null;
+        synchronized(Object.class) {
+            //1.先尝试从redis中读取数据
+            String seckillList = redisService.findKeyMap("goods_list", String.valueOf(key));
+            //2.判断redis中是否有数据
+            if (!StringUtils.isBlank(seckillList)) {
+                //3.从redis中读取剩余数量
+                good = JSON.parseObject(seckillList, Goods.class);
+            } else {
+                //4. redis中没有时，从数据库中读取并缓存到redis
+                good = goodsMapper.selectById(id);
+                redisService.saveKeyMap("goods_list", String.valueOf(key), JSON.toJSONString(good));
+            }
             Long num = good.getNumber();
-            if(num>0){
-                good.setNumber(num-1);
-                redisService.saveKeyMap("goods_list",String.valueOf(id),JSON.toJSONString(good));
+            //5. 采用同步机制保证了不超卖
+            //当线程商品数量大于0时才能秒杀
+            if (num > 0) {
+                good.setNumber(num - 1);
+                redisService.saveKeyMap("goods_list", String.valueOf(id), JSON.toJSONString(good));
+                //6.添加到订单表
+                order(UserThreadLocal.get(), id, System.currentTimeMillis());
                 System.out.println("秒杀成功");
                 return true;
-            }else{
+            } else {
                 System.out.println("秒杀失败");
                 return false;
             }
-        }else {
-            //4. redis中没有时，从数据库中读取并缓存到redis
-            Goods goods = goodsMapper.selectById(id);
-            redisService.saveKeyMap("goods_list",String.valueOf(key),JSON.toJSONString(goods));
-            //5. 判断过程没加锁，因此是线程不安全的
-            //当线程商品数量大于0时才能秒杀
-            Long number = goods.getNumber();
-            if(number>0){
-                LambdaUpdateWrapper<Goods> updateWrapper = new LambdaUpdateWrapper<>();
-                updateWrapper.set(Goods::getNumber,number-1);
-                updateWrapper.eq(Goods::getId,id);
-                goodsMapper.update(null,updateWrapper);
-                System.out.println("秒杀成功");
-                return true;
-            }
-            System.out.println("秒杀失败");
-            return false;
         }
+    }
+
+    @Override
+    /**
+     * 新建一条订单信息，将订单信息插入orders表中。
+     * @param userId
+     * @param goodId
+     * @param orderTime
+     * @return boolean 下单是否成功
+     */
+    public boolean order(Long userId, Long goodId, Long orderTime) {
+        Orders order = new Orders();
+        order.setUserId(userId);
+        order.setGoodId(goodId);
+        order.setOrderTime(orderTime);
+        return orderMapper.insert(order)==1?true:false;
     }
 }

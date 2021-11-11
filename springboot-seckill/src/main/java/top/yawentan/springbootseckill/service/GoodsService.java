@@ -6,4 +6,6 @@ public interface GoodsService {
     Result getAllGoods();
 
     boolean doseckill(Long id);
+
+    boolean order(Long userId,Long goodId,Long orderTime);
 }

@@ -8,6 +8,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import top.yawentan.springbootseckill.service.LoginService;
 import top.yawentan.springbootseckill.util.JWTUtils;
 import top.yawentan.springbootseckill.util.StringUtils;
+import top.yawentan.springbootseckill.util.UserThreadLocal;
 import top.yawentan.springbootseckill.vo.Result;
 
 import javax.servlet.http.HttpServletRequest;
@@ -52,7 +53,8 @@ public class LoginInterceptor implements HandlerInterceptor {
             response.getWriter().print(JSON.toJSONString(result));
             return false;
         }
-        //3.登录成功放行
+        //3.登录成功放行,并将id放入ThreadLocal
+        UserThreadLocal.put(Long.valueOf(userId));
         return true;
     }
 }
