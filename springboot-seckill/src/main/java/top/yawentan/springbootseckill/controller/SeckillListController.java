@@ -24,7 +24,7 @@ public class SeckillListController {
         if(res){
             return Result.success("秒杀成功");
         }else{
-            return Result.success("失败");
+            return Result.failed();
         }
     }
 }

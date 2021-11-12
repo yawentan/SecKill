@@ -36,12 +36,11 @@ public class GoodsServiceImpl implements GoodsService {
     private RedisService redisService;
 
     /**
-     * @function:查询秒杀列表
-     * @process:
-     *          一开始是直接查询mysql，通过jmeter测试，在1000个线程，吞吐量为412.7/sec-510.7/sec
-     *          现在打算将秒杀列表放入redis进行缓存，先查询redis，不存在的话就查redis并将列表拉入redis中
-     *          修改后吞吐量变为了1184.8-1398.6/sec
-     * @return
+     * 查询秒杀列表：
+     * 一开始是直接查询mysql，通过jmeter测试，在1000个线程，吞吐量为412.7/sec-510.7/sec
+     * 现在打算将秒杀列表放入redis进行缓存，先查询redis，不存在的话就查redis并将列表拉入redis中
+     * 修改后吞吐量变为了1184.8-1398.6/sec
+     * @return Result
      */
     @Override
     public Result getAllGoods() {
@@ -72,7 +71,7 @@ public class GoodsServiceImpl implements GoodsService {
     @Override
     public boolean doseckill(Long id) {
         String key = String.valueOf(id);
-        Goods good = null;
+        Goods good;
         synchronized(Object.class) {
             //1.先尝试从redis中读取数据
             String seckillList = redisService.findKeyMap("goods_list", String.valueOf(key));
@@ -92,6 +91,7 @@ public class GoodsServiceImpl implements GoodsService {
                 good.setNumber(num - 1);
                 redisService.saveKeyMap("goods_list", String.valueOf(id), JSON.toJSONString(good));
                 //6.添加到订单表
+                //采用rabbitMQ进行异步下单
                 order(UserThreadLocal.get(), id, System.currentTimeMillis());
                 System.out.println("秒杀成功");
                 return true;
@@ -102,19 +102,19 @@ public class GoodsServiceImpl implements GoodsService {
         }
     }
 
-    @Override
     /**
      * 新建一条订单信息，将订单信息插入orders表中。
-     * @param userId
-     * @param goodId
-     * @param orderTime
+     * @param userId 用户id
+     * @param goodId 商品id
+     * @param orderTime 下单时间
      * @return boolean 下单是否成功
      */
+    @Override
     public boolean order(Long userId, Long goodId, Long orderTime) {
         Orders order = new Orders();
         order.setUserId(userId);
         order.setGoodId(goodId);
         order.setOrderTime(orderTime);
-        return orderMapper.insert(order)==1?true:false;
+        return orderMapper.insert(order)==1;
     }
 }
