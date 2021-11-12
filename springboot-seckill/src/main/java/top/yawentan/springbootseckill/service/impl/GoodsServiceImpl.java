@@ -12,6 +12,7 @@ import top.yawentan.springbootseckill.dao.GoodsMapper;
 import top.yawentan.springbootseckill.dao.OrdersMapper;
 import top.yawentan.springbootseckill.pojo.Goods;
 import top.yawentan.springbootseckill.pojo.Orders;
+import top.yawentan.springbootseckill.rabbitMQ.MQSender;
 import top.yawentan.springbootseckill.service.GoodsService;
 import top.yawentan.springbootseckill.service.RedisService;
 import top.yawentan.springbootseckill.util.StringUtils;
@@ -34,6 +35,8 @@ public class GoodsServiceImpl implements GoodsService {
     private OrdersMapper orderMapper;
     @Autowired
     private RedisService redisService;
+    @Autowired
+    private MQSender mqSender;
 
     /**
      * 查询秒杀列表：
@@ -90,9 +93,13 @@ public class GoodsServiceImpl implements GoodsService {
             if (num > 0) {
                 good.setNumber(num - 1);
                 redisService.saveKeyMap("goods_list", String.valueOf(id), JSON.toJSONString(good));
-                //6.添加到订单表
-                //采用rabbitMQ进行异步下单
-                order(UserThreadLocal.get(), id, System.currentTimeMillis());
+                //6.新建订单对象
+                Orders order = new Orders();
+                order.setUserId(UserThreadLocal.get());
+                order.setGoodId(id);
+                order.setOrderTime(System.currentTimeMillis());
+                //7.采用rabbitMQ进行异步下单
+                mqSender.send(JSON.toJSONString(order));
                 System.out.println("秒杀成功");
                 return true;
             } else {
